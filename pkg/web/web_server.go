@@ -11,6 +11,9 @@ func CreateWebServer() *Server {
 
 	srv.r.POST(kStartServer, srv.StartServerHandler)
 	srv.r.POST(kStopServer, srv.StopServerHandler)
+	srv.r.POST(kLogs, srv.LogsHandler)
+	srv.r.POST(kList, srv.ListingFilesHandler)
+	srv.r.POST(kFile, srv.DisplayFileContent)
 
 	if err := srv.r.Run("localhost:8080"); err != nil {
 		zap.S().Errorf("Error while running the server !")
