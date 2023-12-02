@@ -1,0 +1,22 @@
+package web
+
+import (
+	"github.com/gin-gonic/gin"
+	"go.uber.org/zap"
+)
+
+func CreateWebServer() *Server {
+	srv := new(Server)
+	srv.r = gin.Default()
+
+	srv.r.POST(kStartServer, srv.StartServerHandler)
+	srv.r.POST(kStopServer, srv.StopServerHandler)
+
+	if err := srv.r.Run("localhost:8080"); err != nil {
+		zap.S().Errorf("Error while running the server !")
+	}
+
+	zap.S().Infof("Web server created successfully !!")
+
+	return srv
+}
