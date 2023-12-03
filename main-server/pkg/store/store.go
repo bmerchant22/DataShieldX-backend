@@ -42,33 +42,25 @@ func StartDockerContainer(rootDir string, team int, portInt int) (string, error)
 	containerName := fmt.Sprintf("team%d-code-server", team)
 
 	// HostConfig for volume mount and port binding
-
-	//hostConfig := &container.HostConfig{
-	//	Binds: []string{fmt.Sprintf("%s:/home/coder/project", rootDir)},
-	//	PortBindings: map[nat.Port][]nat.PortBinding{
-	//		"8080/tcp": {{HostIP: "0.0.0.0", HostPort: "8080"}},
-	//	},
-	//}
-
-	tcpStr := port + "/tcp"
 	hostConfig := &container.HostConfig{
 		Binds: []string{fmt.Sprintf("%s:/home/coder/project", rootDir)},
-		PortBindings: map[nat.Port][]nat.PortBinding{
-			nat.Port(tcpStr): {{HostIP: "0.0.0.0", HostPort: port}},
+		PortBindings: nat.PortMap{
+			nat.Port(fmt.Sprintf("%s/tcp", port)): []nat.PortBinding{
+				{
+					HostIP:   "0.0.0.0",
+					HostPort: port,
+				},
+			},
 		},
 	}
-	//hostConfig := &container.HostConfig{
-	//	Binds: []string{fmt.Sprintf("%s:/home/coder/project", rootDir)},
-	//	PortBindings: map[nat.Port][]nat.PortBinding{
-	//		nat.Port(fmt.Sprintf("%s/tcp", port)): {{HostIP: "0.0.0.0", HostPort: fmt.Sprintf("%s", port)}},
-	//	},
-	//}
 
 	// ContainerConfig with environment variable for code-server authentication
 	containerConfig := &container.Config{
 		Image: imageName,
-		//Cmd:   []string{"--auth=none", "--disable-telemetry", fmt.Sprintf("--port=%s", port)},
-		Cmd: []string{"--auth=none", "--disable-telemetry"},
+		ExposedPorts: nat.PortSet{
+			nat.Port(fmt.Sprintf("%s/tcp", port)): struct{}{},
+		},
+		Cmd: []string{"--auth=none", "--disable-telemetry", fmt.Sprintf("--port=%s", port)},
 		Env: []string{"PASSWORD=password"}, // Replace with your desired authentication method
 	}
 
