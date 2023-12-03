@@ -8,9 +8,11 @@ import (
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
 	"go.uber.org/zap"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
+	"strings"
 )
 
 func ResolvePath(dir string) (string, error) {
@@ -27,7 +29,12 @@ func ResolvePath(dir string) (string, error) {
 	return absPath, nil
 }
 
-func StartDockerContainer(rootDir string, team int, portInt int) (string, error) {
+func NameContainer(teamName string) string {
+	containerName := fmt.Sprintf("team-%v-workspace", teamName)
+	return containerName
+}
+
+func StartDockerContainer(rootDir string, team string, portInt int) (string, error) {
 	cli, err := client.NewClientWithOpts(client.FromEnv)
 	if err != nil {
 		return "", err
@@ -39,7 +46,7 @@ func StartDockerContainer(rootDir string, team int, portInt int) (string, error)
 	zap.S().Infof("Docker container on port : %v", port)
 
 	// Container name based on the team
-	containerName := fmt.Sprintf("team%d-code-server", team)
+	containerName := NameContainer(team)
 
 	// HostConfig for volume mount and port binding
 	hostConfig := &container.HostConfig{
@@ -76,4 +83,112 @@ func StartDockerContainer(rootDir string, team int, portInt int) (string, error)
 	}
 
 	return resp.ID, nil
+}
+
+func StopDockerContainer(containerName string) error {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		return err
+	}
+
+	timeout := 10 // Adjust the timeout as needed
+
+	containerID, err := GetContainerIDByTeamName(containerName)
+	if err != nil {
+		zap.S().Errorf("Error while retrieving container ID : %v", err)
+		return err
+	}
+
+	if containerID == "" {
+		return fmt.Errorf("container with name %s not found", containerName)
+	}
+
+	stopOptions := container.StopOptions{
+		Signal:  "",
+		Timeout: &timeout,
+	}
+
+	// Stop the Docker container
+	err = cli.ContainerStop(context.Background(), containerID, stopOptions)
+	if err != nil {
+		zap.S().Errorf("Error while stopping the container: %v", err)
+		return err
+	}
+
+	statusCh, errCh := cli.ContainerWait(context.Background(), containerID, container.WaitConditionNotRunning)
+	select {
+	case <-statusCh:
+		// Container has stopped
+	case err := <-errCh:
+		if err != nil {
+			zap.S().Errorf("Error while running waitContainer: %v", err)
+			return err
+		}
+	}
+
+	// Remove the Docker container
+	err = cli.ContainerRemove(context.Background(), containerID, types.ContainerRemoveOptions{Force: true})
+	if err != nil {
+		zap.S().Errorf("Error while removing the container: %v", err)
+		return err
+	}
+
+	return nil
+}
+
+func GetContainerIDByTeamName(teamName string) (string, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		zap.S().Errorf("Error while creating docker client: %v", err)
+		return "", err
+	}
+
+	// List containers to find the one with the specified name
+	containers, err := cli.ContainerList(context.Background(), types.ContainerListOptions{All: true})
+	if err != nil {
+		zap.S().Errorf("Error while getting list of containers: %v", err)
+		return "", err
+	}
+
+	for _, container := range containers {
+		for _, cName := range container.Names {
+			if strings.TrimPrefix(cName, "/") == teamName {
+				return container.ID, nil
+			}
+		}
+	}
+
+	return "", fmt.Errorf("container with name %s not found", teamName)
+}
+
+func GetContainerLogs(containerID string) (string, error) {
+	cli, err := client.NewClientWithOpts(client.FromEnv)
+	if err != nil {
+		zap.S().Errorf("Error while creating docker client: %v", err)
+		return "", err
+	}
+
+	logOptions := types.ContainerLogsOptions{
+		ShowStdout: true,
+		ShowStderr: true,
+		Follow:     false,
+	}
+
+	// Get container logs
+	logs, err := cli.ContainerLogs(context.Background(), containerID, logOptions)
+	if err != nil {
+		zap.S().Errorf("Error while creating getting container logs: %v", err)
+		return "", err
+	}
+
+	defer logs.Close()
+
+	// Read the logs
+	logContent, err := io.ReadAll(logs)
+	if err != nil {
+		zap.S().Errorf("Error while reading logs: %v", err)
+		return "", err
+	}
+
+	return string(logContent), nil
 }

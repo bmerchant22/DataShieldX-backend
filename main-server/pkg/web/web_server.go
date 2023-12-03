@@ -10,8 +10,8 @@ func CreateWebServer() *Server {
 	srv.r = gin.Default()
 
 	srv.r.POST(kStartServer, srv.StartServerHandler)
-	//srv.r.POST(kStopServer, srv.StopServerHandler)
-	//srv.r.POST(kLogs, srv.LogsHandler)
+	srv.r.POST(kStopServer, srv.StopServerHandler)
+	srv.r.GET(kLogs, srv.LogsHandler)
 	//srv.r.POST(kList, srv.ListingFilesHandler)
 	//srv.r.POST(kFile, srv.DisplayFileContent)
 
