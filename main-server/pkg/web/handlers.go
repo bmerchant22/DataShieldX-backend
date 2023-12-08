@@ -2,8 +2,8 @@ package web
 
 import (
 	"fmt"
-	"github.com/bmerchant22/server-controller/pkg/models"
-	"github.com/bmerchant22/server-controller/pkg/store"
+	"github.com/bmerchant22/DataShieldX-backend/pkg/models"
+	"github.com/bmerchant22/DataShieldX-backend/pkg/store"
 	"github.com/gin-gonic/gin"
 	"go.uber.org/zap"
 	"net/http"

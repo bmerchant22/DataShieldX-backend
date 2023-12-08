@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/bmerchant22/server-controller/pkg/web"
+	"github.com/bmerchant22/DataShieldX-backend/pkg/web"
 	"go.uber.org/zap"
 	"log"
 )
