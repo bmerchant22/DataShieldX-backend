@@ -6,4 +6,5 @@ const (
 	kStopServer   = "/stop/:team"
 	kLogs         = "/logs/:team"
 	kStudentLogin = "/student/auth"
+	kQueryServers = "/servers"
 )

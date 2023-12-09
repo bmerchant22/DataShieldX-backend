@@ -7,6 +7,10 @@ import (
 	"net/http/httputil"
 	"net/url"
 	"strings"
+	"time"
+	"encoding/json"
+	"io"
+	"errors"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/static"
@@ -24,16 +28,57 @@ var allUsers = []Users{
 	{Team: "2", User:"user2", Pass:"pass2"},
 }
 
-const base_url = "localhost:8000" //where this will listen
+var prevReqTime time.Time
 
-// maybe we can have many real server addresses and do some load balanced strategy.
-var RealAddr = []string{
-	"http://0.0.0.0",//replace with address to docker
-}
+const (
+	base_url = "localhost:8000" //where this will listen
+	server_controller = "http://0.0.0.0:8001" //where this will request the server list from
+)
+
+var teamAddrs map[string]string //map of teams -> their servers
 
 // a fake function that we can do strategy here.
-func getLoadBalanceAddr(s string) string {
-	return RealAddr[0]
+func getLoadBalanceAddr(team string) (val string, ok bool) {
+	val, ok = teamAddrs[team]
+	return
+}
+
+func updateAddrs() (err error){
+	log.Println("updating server list")
+	// defer log.Println("exited update addrs", err)
+	resp, err :=http.Get(fmt.Sprintf("%s/servers",server_controller))
+	defer log.Println("err:", err)
+// 	log.Println(err)
+// 	log.Println(resp.StatusCode)
+	if (err != nil) {return err}
+	if (resp.StatusCode != http.StatusOK) {
+		err = errors.New(resp.Status)
+		return
+	}
+	defer resp.Body.Close()
+	log.Println(resp.Status)
+	
+	var respBody []byte
+	respBody, err = io.ReadAll(resp.Body)
+	if (err != nil) {return err}
+	//clear teamAddrs, but back it up first
+	backup := make(map[string]string)
+	for key, val := range teamAddrs {
+		backup[key] = val
+		delete(teamAddrs, key)
+	}
+	//set teamAddrs to response
+	err = json.Unmarshal(respBody, &teamAddrs)
+	if (err != nil) {
+		//restore backup
+		for key, val := range backup {
+			teamAddrs[key] = val
+		}
+		return err
+	}
+	//done
+	log.Printf("%v", teamAddrs)
+	return nil
 }
 
 func appReverseProxyHandler(c *gin.Context) {
@@ -62,13 +107,29 @@ func appReverseProxyHandler(c *gin.Context) {
 		return
 	}
 	
+	//check time and update teamAddrs if necessary
+	//update max every 10s
+	if (time.Now().Sub(prevReqTime) > 10000) {
+		err := updateAddrs()
+		if (err != nil) {
+			c.JSON(http.StatusInternalServerError, gin.H{"error": err})
+			return
+		}
+	}
+
 	//valid user, so set correct proxy
-	proxy, err := url.Parse(getLoadBalanceAddr("reqUser.Team"))
+	addr, ok := getLoadBalanceAddr(reqUser.Team)
+	if (!ok) {
+		c.JSON(http.StatusInternalServerError, gin.H{"error":"server not operating currently"})
+		return
+	}
+	proxy, err := url.Parse(addr)
 	if err != nil {
 		log.Printf("error in parse addr: %v", err)
 		c.String(500, "error")
 		return
 	}
+
 
 	log.Println("accessed path")
 	log.Println(c.Request.URL)
@@ -120,6 +181,10 @@ func authHandler(c *gin.Context) {
 }
 
 func main() {
+
+	teamAddrs = make(map[string]string)
+	prevReqTime = time.Now()
+	updateAddrs()
 	r := gin.Default()
 	
 	

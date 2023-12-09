@@ -20,6 +20,8 @@ var users = []models.User{
 	{Team: 3, Username: "user3", Password: "pass3"},
 }
 
+var RunningServers map[string]string //team string to url
+
 func (srv *Server) StartServerHandler(c *gin.Context) {
 	team := c.Param("team")
 	portStr := c.Param("port")
@@ -31,10 +33,12 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 	// Define root directory based on the team
 	rootDir := ""
 	switch team {
+	case "0":
+		rootDir = "~/team0"
 	case "1":
-		rootDir = "Desktop/advent-of-code"
+		rootDir = "~/team1"
 	case "2":
-		rootDir = "Desktop/DataShieldX"
+		rootDir = "~/team2"
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team"})
 		return
@@ -54,6 +58,9 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
+	
+	//add to RunningServers
+	RunningServers[team] = fmt.Sprintf("http://localhost:%d", port)
 
 	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Docker container started successfully for team %d", team), "containerID": containerID, "port": port, "rootDir": absRootDir})
 
@@ -70,6 +77,14 @@ func (srv *Server) StopServerHandler(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{"message": "Docker container stopped successfully", "containerName": containerName})
+	
+	//remove from RunningServers
+	delete(RunningServers, team)
+	
+}
+
+func (srv *Server) QueryServerHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, RunningServers)
 }
 
 func (srv *Server) LogsHandler(c *gin.Context) {
