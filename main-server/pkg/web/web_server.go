@@ -33,7 +33,7 @@ func CreateWebServer() *Server {
 	//srv.r.POST(kList, srv.ListingFilesHandler)
 	//srv.r.POST(kFile, srv.DisplayFileContent)
 
-	if err := srv.r.Run("localhost:8000"); err != nil {
+	if err := srv.r.Run("0.0.0.0:8000"); err != nil {
 		zap.S().Errorf("Error while running the server !")
 	}
 
