@@ -38,6 +38,23 @@ func CreateWebServer() *Server {
 	//srv.r.POST(kList, srv.ListingFilesHandler)
 	//srv.r.POST(kFile, srv.DisplayFileContent)
 
+	// CRUD for projects
+	srv.r.POST(kCreateProject, srv.CreateProjectHandler)
+	srv.r.POST(kDeleteProject, srv.DeleteProjectHandler)
+	srv.r.POST(kUpdateProject, srv.UpdateProjectHandler)
+	srv.r.GET(kGetProjects, srv.GetProjectsHandler)
+	srv.r.GET(kGetProject, srv.GetProjectHandler)
+
+	// // Apps marketplace
+	srv.r.GET(kGetApps, srv.GetAppsHandler)
+
+	// // Generative routes.
+	// srv.r.POST(kGenerateMilestone, srv.GenerateMilestoneHandler)
+	// srv.r.POST(kGenerateTasks, srv.GenerateTasksHandler)
+	
+
+
+
 	if err := srv.r.Run("0.0.0.0:8001"); err != nil {
 		zap.S().Errorf("Error while running the server !")
 	}
