@@ -34,11 +34,11 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 	rootDir := ""
 	switch team {
 	case "0":
-		rootDir = "~/team0"
+		rootDir = "Desktop/advent-of-code"
 	case "1":
-		rootDir = "~/team1"
+		rootDir = "Desktop/DataShieldX"
 	case "2":
-		rootDir = "~/team2"
+		rootDir = "Desktop/server-controller"
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team"})
 		return

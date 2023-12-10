@@ -1,0 +1,30 @@
+version: '3'
+
+services:
+  client:
+    build:
+      context: ./main-server
+      dockerfile: Dockerfile
+    ports:
+      - "8001:8001"
+    networks:
+      - mynetwork
+    privileged: true
+    volumes:
+      - ./main-server/out:/space/out
+      - /var/run/docker.sock:/var/run/docker.sock
+
+  student:
+    build:
+      context: ./student-entry
+      dockerfile: Dockerfile
+    ports:
+      - "8000:8000"
+    networks:
+      - mynetwork
+    volumes:
+      - ./student-entry/out:/space/out
+
+networks:
+  mynetwork:
+    driver: bridge

@@ -18,7 +18,6 @@ func CreateWebServer() *Server {
 	
 	//static path
 	srv.r.Use(static.Serve("/", static.LocalFile("./out", true)))
-	
 // 	outFolderPath := "out"
 // 	if _, err := os.Stat(outFolderPath); os.IsNotExist(err) {
 // 		// If "out" folder doesn't exist, t ry "../out" (adjust as needed)
