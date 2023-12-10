@@ -20,5 +20,7 @@ COPY --from=builder /build/app bin/app
 # Install Docker client
 RUN apk --no-cache add docker
 
-EXPOSE 8000
+COPY out/ /space/out/
+
+# EXPOSE 8001
 ENTRYPOINT ["/bin/sh", "-c", "/space/bin/app"]

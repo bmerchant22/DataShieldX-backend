@@ -1,7 +1,7 @@
 package web
 
 const (
-	kFrontend     = "/frontend"
+	// kFrontend     = "/frontend"
 	kStartServer  = "/start/:team/:port"
 	kStopServer   = "/stop/:team"
 	kLogs         = "/logs/:team"

@@ -31,8 +31,8 @@ var allUsers = []Users{
 var prevReqTime time.Time
 
 const (
-	base_url = "localhost:8000" //where this will listen
-	server_controller = "http://0.0.0.0:8001" //where this will request the server list from
+	base_url = "0.0.0.0:8000" //where this will listen
+	server_controller = "http://client:8001" //where this will request the server list from
 )
 
 var teamAddrs map[string]string //map of teams -> their servers
@@ -123,7 +123,12 @@ func appReverseProxyHandler(c *gin.Context) {
 		c.JSON(http.StatusInternalServerError, gin.H{"error":"server not operating currently"})
 		return
 	}
-	proxy, err := url.Parse(addr)
+
+	lastDigit := addr[len(addr)-1]
+	newAddr := "http://team-"+string(lastDigit)+"-workspace:808"+string(lastDigit)
+	log.Println(newAddr)
+
+	proxy, err := url.Parse(newAddr)
 	if err != nil {
 		log.Printf("error in parse addr: %v", err)
 		c.String(500, "error")
@@ -145,8 +150,8 @@ func appReverseProxyHandler(c *gin.Context) {
 	rp := new(httputil.ReverseProxy)
 	rp.Director = func(hreq *http.Request) {
 		hreq = req
-// 		hreq.URL, err = url.Parse(fmt.Sprintf("%s%s",proxy,c.Param("path")))
-// 		log.Println("in URL:", c.Request.URL, "hreq URL:", hreq.URL)
+	 //  hreq.URL, err = url.Parse(fmt.Sprintf("%s%s",proxy,c.Param("path")))
+	 //  log.Println("in URL:", c.Request.URL, "hreq URL:", hreq.URL)
 		
 		
 	}
