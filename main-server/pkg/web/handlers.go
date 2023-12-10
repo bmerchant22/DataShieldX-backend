@@ -34,26 +34,26 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 	rootDir := ""
 	switch team {
 	case "0":
-		rootDir = "Desktop/advent-of-code"
+		rootDir = "out/client"
 	case "1":
-		rootDir = "Desktop/DataShieldX"
+		rootDir = "out/404"
 	case "2":
-		rootDir = "Desktop/server-controller"
+		rootDir = "out/assets"
 	default:
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team"})
 		return
 	}
 
 	// Resolve the root directory path
-	absRootDir, err := store.ResolvePath(rootDir)
-	if err != nil {
-		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
-		return
-	}
-	zap.S().Infof("Working root directory : %v", absRootDir)
+	// absRootDir, err := store.ResolvePath(rootDir)
+	// if err != nil {
+	// 	c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	zap.S().Infof("Working root directory : %v", rootDir)
 
 	// Start the command
-	containerID, err := store.StartDockerContainer(absRootDir, team, port)
+	containerID, err := store.StartDockerContainer(rootDir, team, port)
 	if err != nil {
 		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
@@ -62,7 +62,7 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 	//add to RunningServers
 	RunningServers[team] = fmt.Sprintf("http://localhost:%d", port)
 
-	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Docker container started successfully for team %d", team), "containerID": containerID, "port": port, "rootDir": absRootDir})
+	c.JSON(http.StatusOK, gin.H{"message": fmt.Sprintf("Docker container started successfully for team %d", team), "containerID": containerID, "port": port, "rootDir": rootDir})
 
 }
 
