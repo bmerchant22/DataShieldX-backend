@@ -7,6 +7,7 @@ import (
 	"github.com/docker/docker/api/types/container"
 	"github.com/docker/docker/client"
 	"github.com/docker/go-connections/nat"
+	"github.com/docker/docker/api/types/network"
 	"go.uber.org/zap"
 	"io"
 	"os"
@@ -71,8 +72,13 @@ func StartDockerContainer(rootDir string, team string, portInt int) (string, err
 		Env: []string{"PASSWORD=password"}, // Replace with your desired authentication method
 	}
 
+	networkConfig := &network.NetworkingConfig{
+        EndpointsConfig: map[string]*network.EndpointSettings{
+			"datashieldx-backend_mynetwork": {}, // You can customize settings here if needed
+		},
+    }
 	// Create the container
-	resp, err := cli.ContainerCreate(context.Background(), containerConfig, hostConfig, nil, nil, containerName)
+	resp, err := cli.ContainerCreate(context.Background(), containerConfig, hostConfig, networkConfig, nil, containerName)
 	if err != nil {
 		return "", err
 	}

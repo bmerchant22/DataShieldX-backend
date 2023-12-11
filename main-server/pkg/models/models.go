@@ -10,16 +10,16 @@ type Project struct {
     Project_ID    string      `bson:"project_id" binding:"required"`
     Name          string      `bson:"name"`
     Project_Desc  string      `bson:"project_desc"`
-    Milestones    []Milestone `bson:"milestones"`
-    Team          []User      `bson:"team"`
-    Apps          []App         `bson:"apps"`
+    Milestones    interface{} `bson:"milestones"`
+    Team          interface{}      `bson:"team"`
+    Apps          interface{}         `bson:"apps"`
 }
 
 type Milestone struct {
     Milestone_ID    string `bson:"milestone_id"`
     Milestone_Desc  string `bson:"milestone_desc"`
     Completion_Date string `bson:"completion_date"`
-    Tasks           []Task `bson:"tasks"`
+    Tasks           interface{} `bson:"tasks"`
 }
 
 type Task struct {
@@ -28,7 +28,7 @@ type Task struct {
     Start_Time  string  `bson:"start_time"`
     End_Time    string  `bson:"end_time"`
     Status      string  `bson:"status"`
-    Assignees   []User  `bson:"assignees"`
+    Assignees   interface{}  `bson:"assignees"`
 }
 
 type App struct {
