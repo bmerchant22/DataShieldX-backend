@@ -16,7 +16,7 @@ func main() {
 
 	defer logger.Sync()
 
-	zap.ReplaceGlobals(logger)
+	// zap.ReplaceGlobals(logger)
 
 	web.CreateWebServer()
 }

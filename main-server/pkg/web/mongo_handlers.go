@@ -3,7 +3,6 @@ package web
 import(
 	"context"
 	"net/http"
-// 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"fmt"
 	"github.com/bmerchant22/DataShieldX-backend/pkg/models"
@@ -14,7 +13,7 @@ import(
 )
 
 //* Get ENV variables 
-var mongoURI 				= "mongodb+srv://trumio:trumio-db-pass!@rocket-chat-cluster.wg1zzcc.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
+var mongoURI 				= "mongodb+srv://deven:neved@cluster0.h5zvxkm.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
 var mongoDBName 			= 	"trumio-backend"		//os.Getenv("MONGO_DB_NAME")
 var projectsCollectionName 	= "projects-collection"			//os.Getenv("PROJECTS_COLLECTION_NAME")
 // var usersCollectionName := 			//os.Getenv("USERS_COLLECTION_NAME")
@@ -88,6 +87,7 @@ func UpdateDocument(client *mongo.Client, databaseName string, collectionName st
 	// Create a filter
 	filter := bson.D{{id_key, id_value}}
 	// Create an update
+	
 	update := bson.D{{"$set", upsert_doc}}
 	// Update the document
 	_, err := collection.UpdateOne(context.Background(), filter, update)
@@ -185,29 +185,18 @@ func (srv *Server) DeleteProjectHandler(c *gin.Context) {
 
 // Update Project Handler using Upsert functionality
 func (srv *Server) UpdateProjectHandler(c *gin.Context) {
-
 	// Get the JSON request body & parse it as model Project
 	var project models.Project
 	if err := c.ShouldBindJSON(&project); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error(), "project": project})
 		return
 	}
-
-	// Print the project details
-	// fmt.Printf("Project ID: %s\n", project.Project_ID)
-	// fmt.Printf("Project Name: %s\n", project.Name)
-	// fmt.Printf("Project Description: %s\n", project.Project_Desc)
-	// fmt.Printf("Milestones: %s\n", project.Milestones)
-	// fmt.Printf("Team: %s\n", project.Team)
-	// fmt.Printf("Apps: %s\n", project.Apps)
-
 	// Create a new client and connect to the server
 	mongoClient, err := CreateMongoClient()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
 		return
 	}
-
 	// Check if the project exists
 	if !CheckIfDocumentExists(mongoClient, mongoDBName, projectsCollectionName, "project_id", project.Project_ID) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": "Project doesn't exist"})
@@ -348,6 +337,5 @@ func (srv *Server) GenerateMilestoneHandler (c *gin.Context) {
 				"completion_date":"2024/02/15",
 			},
 		},
-	})
-	
+	})	
 }
