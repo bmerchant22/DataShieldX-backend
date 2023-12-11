@@ -3,3 +3,6 @@ out
 */out
 .DS_Store
 **/.DS_Store
+/out
+main-server/out
+student-entry/out
