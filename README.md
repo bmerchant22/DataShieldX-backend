@@ -20,7 +20,7 @@ This repository contains a Go-based web application using the Gin framework, org
 
 1. Ensure you have Docker installed on your machine.
 
-2. the name of the main directory as DatashieldX-backend
+2. Keep the name of the main directory as `DatashieldX-backend`
 
 3. Open a terminal and navigate to the project root directory.
 
@@ -28,17 +28,24 @@ This repository contains a Go-based web application using the Gin framework, org
 
    ```bash
    docker-compose up -d
+   ```
+
+5. To connect to rocket chat:
+
+    ```bash
+    chmod +x rocket_chat.sh
+    ./rocket_chat.sh
+    ```
+
 This command will build the Docker images for both the student and client components and start the containers.
 
 Once the containers are running, you can access the web applications in your browser:
 
-Student component: http://localhost:8080
-Client component: http://localhost:8081
-Notes
-Each component has its own Dockerfile to ensure isolation and easy deployment.
+**Student component**: http://localhost:8080 \
+**Client component**: http://localhost:8081 \
+\
+<!-- Notes -->
+<!-- Each component has its own Dockerfile to ensure isolation and easy deployment.
 The static files for the frontend are stored in the out/ folders within each component.
 The docker-compose.yaml file orchestrates the deployment of both components, making it easy to run the entire project with a single command.
-Feel free to modify the code, static files, or Docker configurations to suit your specific needs. If you encounter any issues or have questions, refer to the documentation of Go, Gin, and Docker for further assistance.
-
-
-Also, to run rocket chat, run the given script
+Feel free to modify the code, static files, or Docker configurations to suit your specific needs. If you encounter any issues or have questions, refer to the documentation of Go, Gin, and Docker for further assistance. -->

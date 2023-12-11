@@ -31,18 +31,21 @@ func (srv *Server) StartServerHandler(c *gin.Context) {
 	}
 
 	// Define root directory based on the team
-	rootDir := ""
-	switch team {
-	case "0":
-		rootDir = "out/client"
-	case "1":
-		rootDir = "out/404"
-	case "2":
-		rootDir = "out/assets"
-	default:
-		c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team"})
-		return
-	}
+	// rootDir := ""
+	// switch team {
+	// case "0":
+	// 	rootDir = "/out/client"
+	// case "1":
+	// 	rootDir = "/out/404"
+	// case "2":
+	// 	rootDir = "/out/assets"
+	// default:
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": "Invalid team"})
+	// 	return
+	// }
+
+	rootDir := "/home/bmerchant/Desktop/DataShieldX-backend/project_shared_dir"
+
 
 	// Resolve the root directory path
 	// absRootDir, err := store.ResolvePath(rootDir)
