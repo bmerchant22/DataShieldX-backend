@@ -321,3 +321,29 @@ func (srv *Server) GetAppsHandler(c *gin.Context) {
 	// Return the response
 	c.JSON(http.StatusOK, gin.H{"apps": apps})
 }
+
+//dummy milestone generator handler
+func (srv *Server) GenerateMilestoneHandler (c *gin.Context) {
+	//in request: a json with fields name and project_desc - unmarshal and send to model, receive milestones in json format and return
+	//returning mock data:
+	c.JSON(http.StatusOK, gin.H{
+		"milestones": []interface{}{
+			map[string]string{
+				"milestone_id": "1",
+				"milestone_desc": "Research ways of reducing server latency",
+				"completion_date":"2024/01/05",
+			},
+			map[string]string{
+				"milestone_id": "2",
+				"milestone_desc": "Implement netcode for game server",
+				"completion_date":"2024/02/05",
+			},
+			map[string]string{
+				"milestone_id": "3",
+				"milestone_desc": "Finish auxilliary features",
+				"completion_date":"2024/02/15",
+			},
+		},
+	})
+	
+}
