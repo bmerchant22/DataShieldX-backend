@@ -3,6 +3,7 @@ package web
 import(
 	"context"
 	"net/http"
+// 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"fmt"
 	"github.com/bmerchant22/DataShieldX-backend/pkg/models"
@@ -232,7 +233,7 @@ func (srv *Server) GetProjectsHandler(c *gin.Context) {
 	// Create a new client and connect to the server
 	mongoClient, err := CreateMongoClient()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error1": err.Error()})
 		return
 	}
 
@@ -241,15 +242,18 @@ func (srv *Server) GetProjectsHandler(c *gin.Context) {
 	collection := mongoClient.Database(mongoDBName).Collection(projectsCollectionName)
 	cursor, err := collection.Find(context.Background(), bson.D{})
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error2": err.Error()})
 		return
 	}
 	if err = cursor.All(context.Background(), &projects); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error3": err.Error()})
 		return
 	}
 
 	// Return the response
+// 	ret, err2 := json.Marshal(gin.H{"projects": projects})
+	
+// 	if (err2 != nil) {c.JSON(http.StatusInternalServerError, gin.H{"error": err2.Error()})}
 	c.JSON(http.StatusOK, gin.H{"projects": projects})
 
 }
