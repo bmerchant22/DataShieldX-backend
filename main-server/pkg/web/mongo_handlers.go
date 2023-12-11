@@ -3,6 +3,7 @@ package web
 import(
 	"context"
 	"net/http"
+// 	"encoding/json"
 	"github.com/gin-gonic/gin"
 	"fmt"
 	"github.com/bmerchant22/DataShieldX-backend/pkg/models"
@@ -232,7 +233,7 @@ func (srv *Server) GetProjectsHandler(c *gin.Context) {
 	// Create a new client and connect to the server
 	mongoClient, err := CreateMongoClient()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error1": err.Error()})
 		return
 	}
 
@@ -241,15 +242,18 @@ func (srv *Server) GetProjectsHandler(c *gin.Context) {
 	collection := mongoClient.Database(mongoDBName).Collection(projectsCollectionName)
 	cursor, err := collection.Find(context.Background(), bson.D{})
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error2": err.Error()})
 		return
 	}
 	if err = cursor.All(context.Background(), &projects); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error3": err.Error()})
 		return
 	}
 
 	// Return the response
+// 	ret, err2 := json.Marshal(gin.H{"projects": projects})
+	
+// 	if (err2 != nil) {c.JSON(http.StatusInternalServerError, gin.H{"error": err2.Error()})}
 	c.JSON(http.StatusOK, gin.H{"projects": projects})
 
 }
@@ -320,4 +324,30 @@ func (srv *Server) GetAppsHandler(c *gin.Context) {
 
 	// Return the response
 	c.JSON(http.StatusOK, gin.H{"apps": apps})
+}
+
+//dummy milestone generator handler
+func (srv *Server) GenerateMilestoneHandler (c *gin.Context) {
+	//in request: a json with fields name and project_desc - unmarshal and send to model, receive milestones in json format and return
+	//returning mock data:
+	c.JSON(http.StatusOK, gin.H{
+		"milestones": []interface{}{
+			map[string]string{
+				"milestone_id": "1",
+				"milestone_desc": "Research ways of reducing server latency",
+				"completion_date":"2024/01/05",
+			},
+			map[string]string{
+				"milestone_id": "2",
+				"milestone_desc": "Implement netcode for game server",
+				"completion_date":"2024/02/05",
+			},
+			map[string]string{
+				"milestone_id": "3",
+				"milestone_desc": "Finish auxilliary features",
+				"completion_date":"2024/02/15",
+			},
+		},
+	})
+	
 }
