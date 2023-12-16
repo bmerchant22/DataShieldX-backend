@@ -13,7 +13,7 @@ import(
 )
 
 //* Get ENV variables 
-var mongoURI 				= "mongodb+srv://deven:neved@cluster0.h5zvxkm.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
+var mongoURI 				= "mongodb+srv://trumio:trumio-db-pass!@rocket-chat-cluster.wg1zzcc.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
 var mongoDBName 			= 	"trumio-backend"		//os.Getenv("MONGO_DB_NAME")
 var projectsCollectionName 	= "projects-collection"			//os.Getenv("PROJECTS_COLLECTION_NAME")
 // var usersCollectionName := 			//os.Getenv("USERS_COLLECTION_NAME")

@@ -15,9 +15,9 @@ type Server struct {
 }
 
 var users = []models.User{
-	{Team: 1, Username: "user1", Password: "pass1"},
-	{Team: 2, Username: "user2", Password: "pass2"},
-	{Team: 3, Username: "user3", Password: "pass3"},
+	{Team: "1", Username: "user1", Password: "pass1"},
+	{Team: "2", Username: "user2", Password: "pass2"},
+	{Team: "3", Username: "user3", Password: "pass3"},
 }
 
 var RunningServers map[string]string //team string to url

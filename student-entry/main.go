@@ -42,8 +42,13 @@ const (
 
 var teamAddrs map[string]string //map of teams -> their servers
 var prevReqTime time.Time
-var allUsers []Users
 var apps []App
+
+var allUsers = []Users{
+	{Team: "1", Username: "user1", Password: "pass1"},
+	{Team: "2", Username: "user2", Password: "pass2"},
+	{Team: "3", Username: "user3", Password: "pass3"},
+}
 //for directing requests to correct server
 func getLoadBalanceAddr(team string) (val string, ok bool) {
 	val, ok = teamAddrs[team]
@@ -88,22 +93,23 @@ func updateAddrs() (err error){
 	return nil
 }
 
-func getUsersFromController() (err error) {
-	resp, err := http.Get(fmt.Sprintf("%s/getUsers",server_controller))
-	if (err != nil) {return}
-	if resp.StatusCode != http.StatusOK {
-		err = errors.New(resp.Status)
-		return
-	}
-	defer resp.Body.Close()
+// func getUsersFromController() (err error) {
+// 	resp, err := http.Get(fmt.Sprintf("%s/getUsers",server_controller))
+// 	if (err != nil) {return}
+// 	if resp.StatusCode != http.StatusOK {
+// 		err = errors.New(resp.Status)
+// 		return
+// 	}
+// 	defer resp.Body.Close()
 	
-	var respBody []byte
-	respBody, err = io.ReadAll(resp.Body)
-	if (err != nil) {return}
-	//set users to response
-	err = json.Unmarshal(respBody, &allUsers)
-	return
-}
+// 	var respBody []byte
+// 	respBody, err = io.ReadAll(resp.Body)
+// 	if (err != nil) {return}
+// 	//set users to response
+// 	err = json.Unmarshal(respBody, &allUsers)
+// 	log.Println(allUsers)
+// 	return
+// }
 
 func getAppsFromController() (err error) {
 	log.Println("Getting apps")
@@ -205,22 +211,28 @@ func requestAppsHandler(c *gin.Context) { //input: teamid, array of apps to requ
 		c.JSON(http.StatusBadRequest, gin.H{"error":"unauthorized"})
 		return
 	}
-	for app := range req.Apps {
+	for _, app := range req.Apps {
 		if app.Approval_Status != "pending" {
 			c.JSON(http.StatusBadRequest, gin.H{"error":"unauthorized"})
 			return
 		}
 	}
 	//valid request, send to server controller
-	jsonbody := json.Marshal(req)
-	resp, resperr := http.Post(fmt.Sprintf("%s/updateProject", server_controller), bytes.NewBuffer(jsonbody))
+	jsonbody, _ := json.Marshal(req)
+	resp, _ := http.Post(fmt.Sprintf("%s/updateProject", server_controller),"application/json", bytes.NewBuffer(jsonbody))
 	defer resp.Body.Close()
 // 	if (resperr != nil) {
 // 		c.JSON(http.StatusBadRequest, gin.H{"error": resperr})
 // 		return
 // 	}
-	respbody := io.Reader(resp.Body)
-	c.Data(resp.StatusCode,"application/json",respbody)
+	// respbody := io.Reader(resp.Body)
+	respBody, err := io.ReadAll(resp.Body)
+	if err != nil {
+		// Handle the error
+		c.JSON(http.StatusInternalServerError, gin.H{"error": err.Error()})
+		return
+	}
+	c.Data(resp.StatusCode,"application/json",respBody)
 }
 
 
@@ -305,34 +317,36 @@ func appReverseProxyHandler(c *gin.Context) {
 func authHandler(c *gin.Context) {
 	//once logged in, set cookie
 	var requestUser Users
-	if err := c.ShouldBindJSON(&requestUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-	log.Println("user:",requestUser.Team,requestUser.Username,requestUser.Password)
-	var foundUser *Users
-	for _, user := range allUsers {
-		if user == requestUser {
-			foundUser = &user
-			break
-		}
-	}
-	// check if the user was found
-	if foundUser == nil {
-		log.Println("user not found:",requestUser.Team,requestUser.Username,requestUser.Password)
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
-		return
-	}
+	// if err := c.ShouldBindJSON(&requestUser); err != nil {
+	// 	c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+	// 	return
+	// }
+	// log.Println("user:",requestUser.Team,requestUser.Username,requestUser.Password)
+	// var foundUser *Users
+	// for _, user := range allUsers {
+	// 	if user == requestUser {
+	// 		foundUser = &user
+	// 		break
+	// 	}
+	// }
+	// // check if the user was found
+	// if foundUser == nil {
+	// 	log.Println("user not found:",requestUser.Team,requestUser.Username,requestUser.Password)
+	// 	c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+	// 	return
+	// }
 	
 	//user found, so set cookie to their credentials (this is a prototype)
-	c.SetCookie("creds", fmt.Sprintf("%s:%s:%s", foundUser.Team, foundUser.Username, foundUser.Password), 86400, "/", base_url, false, true)
+	c.SetCookie("creds", fmt.Sprintf("%s:%s:%s", requestUser.Team,requestUser.Username,requestUser.Password), 86400, "/", base_url, false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
 }
 
 func main() {
 
 	teamAddrs = make(map[string]string)
-	getUsersFromController()
+	// getUsersFromController()
+	log.Println("Error msg ------------------")
+	log.Println(allUsers)
 	getAppsFromController()
 	prevReqTime = time.Now()
 	updateAddrs()
