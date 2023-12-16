@@ -27,9 +27,8 @@ func CreateWebServer() *Server {
 	srv.r.POST(kStartServer, srv.StartServerHandler)
 	srv.r.POST(kStopServer, srv.StopServerHandler)
 	srv.r.GET(kLogs, srv.LogsHandler)
-// 	srv.r.POST(kStudentLogin, srv.LoginHandler)
-	
 	srv.r.GET(kQueryServers, srv.QueryServerHandler)
+	srv.r.GET(kGetUsers, srv.UserHandler)
 	// srv.r.Static("/", "./out")
 	//srv.r.StaticFS("/_next", http.Dir(outFolderPath+"/_next"))
 	//srv.r.StaticFS("/student", http.Dir(outFolderPath+"/student"))

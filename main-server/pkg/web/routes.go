@@ -17,8 +17,9 @@ const (
 	kGetApps 		= "/getApps"		// Gets all apps from global collection
 
 	// Generative routes.
-	kGenerateMilestone 	= "/generateMilestone" 	// Generates a milestone for a project given a basic description
+	kGenerateMilestone 	= "/generateMilestones" 	// Generates a milestone for a project given a basic description
 	kGenerateTasks 		= "/generateTasks"		// Generates tasks for a milestone given a milestone
 
+	kGetUsers 		= "/getUsers" //get user credentials
 
 )

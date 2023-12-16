@@ -250,11 +250,22 @@ func (srv *Server) GetProjectsHandler(c *gin.Context) {
 // Get Project Handler
 func (srv *Server) GetProjectHandler(c *gin.Context) {
 	
-	// Get the JSON request body & parse it as model Project
+	//get requests aren't supposed to have bodies so we query by url params (the param is id)
 	var project models.Project
-	if err := c.ShouldBindJSON(&project); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
+	var ok bool
+	// if err := c.ShouldBindJSON(&project); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error1": err.Error()})
+// 		return
+// 	}
+	defer func() {
+		if r := recover(); r != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": r})
+			return
+		}
+	}()
+	project.Project_ID, ok = c.GetQuery("id");
+	if (!ok) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "missing id"});
 	}
 
 	// Print the project details
@@ -263,7 +274,7 @@ func (srv *Server) GetProjectHandler(c *gin.Context) {
 	// Create a new client and connect to the server
 	mongoClient, err := CreateMongoClient()
 	if err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error2": err.Error()})
 		return
 	}
 
@@ -278,7 +289,7 @@ func (srv *Server) GetProjectHandler(c *gin.Context) {
 	collection := mongoClient.Database(mongoDBName).Collection(projectsCollectionName)
 	filter := bson.D{{"project_id", project.Project_ID}}
 	if err := collection.FindOne(context.Background(), filter).Decode(&projectFromDB); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+		c.JSON(http.StatusBadRequest, gin.H{"error3": err.Error()})
 		return
 	}
 
@@ -312,7 +323,7 @@ func (srv *Server) GetAppsHandler(c *gin.Context) {
 	}
 
 	// Return the response
-	c.JSON(http.StatusOK, gin.H{"apps": apps})
+	c.JSON(http.StatusOK, apps)
 }
 
 //dummy milestone generator handler
@@ -321,20 +332,23 @@ func (srv *Server) GenerateMilestoneHandler (c *gin.Context) {
 	//returning mock data:
 	c.JSON(http.StatusOK, gin.H{
 		"milestones": []interface{}{
-			map[string]string{
+			map[string]interface{}{
 				"milestone_id": "1",
 				"milestone_desc": "Research ways of reducing server latency",
 				"completion_date":"2024/01/05",
+				"tasks": []interface{}{},
 			},
-			map[string]string{
+			map[string]interface{}{
 				"milestone_id": "2",
 				"milestone_desc": "Implement netcode for game server",
 				"completion_date":"2024/02/05",
+				"tasks": []interface{}{},
 			},
-			map[string]string{
+			map[string]interface{}{
 				"milestone_id": "3",
 				"milestone_desc": "Finish auxilliary features",
 				"completion_date":"2024/02/15",
+				"tasks": []interface{}{},
 			},
 		},
 	})	

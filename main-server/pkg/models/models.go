@@ -30,7 +30,7 @@ type Task struct {
     Status      string  `bson:"status" json:"status"`
     Assignees   []User  `bson:"assignees" json:"assignees"`
 }
-
+//status should be "completed", "pending" or "late"
 type App struct {
     App_Name         string `bson:"app_name" json:"app_name"`
     App_Desc         string `bson:"app_desc" json:"app_desc"`

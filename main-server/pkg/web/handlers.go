@@ -117,32 +117,33 @@ type loginRequest struct {
 	RememberMe bool   `json:"remember_me"`
 }
 
-func (srv *Server) LoginHandler(c *gin.Context) {
-	var requestUser models.User
-	if err := c.ShouldBindJSON(&requestUser); err != nil {
-		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
-		return
-	}
-
-	// Find the user by username
-	var foundUser *models.User
-	for _, user := range users {
-		if user.Username == requestUser.Username {
-			foundUser = &user
-			break
-		}
-	}
-
-	// Check if the user was found
-	if foundUser == nil {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
-		return
-	}
-
-	// Check if the password and team match
-	if foundUser.Password == requestUser.Password && foundUser.Team == requestUser.Team {
-		c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
-	} else {
-		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username, password, or team"})
-	}
+func (srv *Server) UserHandler(c *gin.Context) {
+	// var requestUser models.User
+// 	if err := c.ShouldBindJSON(&requestUser); err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+// 		return
+// 	}
+// 
+// 	// Find the user by username
+// 	var foundUser *models.User
+// 	for _, user := range users {
+// 		if user.Username == requestUser.Username {
+// 			foundUser = &user
+// 			break
+// 		}
+// 	}
+// 
+// 	// Check if the user was found
+// 	if foundUser == nil {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+// 		return
+// 	}
+// 
+// 	// Check if the password and team match
+// 	if foundUser.Password == requestUser.Password && foundUser.Team == requestUser.Team {
+// 		c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
+// 	} else {
+// 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username, password, or team"})
+// 	}
+	c.JSON(http.StatusOK, users);
 }

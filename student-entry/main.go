@@ -11,33 +11,40 @@ import (
 	"encoding/json"
 	"io"
 	"errors"
+	"bytes"
 
 	"github.com/gin-gonic/gin"
 	"github.com/gin-contrib/static"
+	"github.com/gin-contrib/cors"
 )
 
 type Users struct {
-	Team string
-	User string
-	Pass string
+	Team string		`json:"team"`
+	Username string `json:"username"`
+	Password string `json:"password"`
 }
 
-var allUsers = []Users{
-	{Team: "0", User:"user0", Pass:"pass0"},
-	{Team: "1", User:"user1", Pass:"pass1"},
-	{Team: "2", User:"user2", Pass:"pass2"},
+type App struct {
+    App_Name         string `bson:"app_name" json:"app_name"`
+    App_Desc         string `bson:"app_desc" json:"app_desc"`
+    Approval_Status  string `bson:"approval_status" json:"approval_status"`
 }
 
-var prevReqTime time.Time
+type AppRequest struct {
+	Team string `json:"team"`
+	Apps []App	`json:"apps"`
+}
 
 const (
 	base_url = "0.0.0.0:8000" //where this will listen
-	server_controller = "http://client:8001" //where this will request the server list from
+	server_controller = "http://localhost:8001" //where this will request the server list from
 )
 
 var teamAddrs map[string]string //map of teams -> their servers
-
-// a fake function that we can do strategy here.
+var prevReqTime time.Time
+var allUsers []Users
+var apps []App
+//for directing requests to correct server
 func getLoadBalanceAddr(team string) (val string, ok bool) {
 	val, ok = teamAddrs[team]
 	return
@@ -80,6 +87,143 @@ func updateAddrs() (err error){
 	log.Printf("%v", teamAddrs)
 	return nil
 }
+
+func getUsersFromController() (err error) {
+	resp, err := http.Get(fmt.Sprintf("%s/getUsers",server_controller))
+	if (err != nil) {return}
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(resp.Status)
+		return
+	}
+	defer resp.Body.Close()
+	
+	var respBody []byte
+	respBody, err = io.ReadAll(resp.Body)
+	if (err != nil) {return}
+	//set users to response
+	err = json.Unmarshal(respBody, &allUsers)
+	return
+}
+
+func getAppsFromController() (err error) {
+	log.Println("Getting apps")
+	resp, err := http.Get(fmt.Sprintf("%s/getApps",server_controller))
+	if (err != nil) {return}
+	if resp.StatusCode != http.StatusOK {
+		err = errors.New(resp.Status)
+		return
+	}
+	defer resp.Body.Close()
+	
+	var respBody []byte
+	respBody, err = io.ReadAll(resp.Body)
+	log.Println(string(respBody))
+	if (err != nil) {return}
+	//set users to response
+	err = json.Unmarshal(respBody, &apps)
+	log.Println(err)
+	log.Println("gotten apps")
+	log.Println(apps)
+	return
+}
+
+func getAppsHandler(c *gin.Context) {
+	c.JSON(http.StatusOK, apps);
+}
+
+func getProjectHandler(c *gin.Context) { //input: teamid in URL params, check teamid then forward straight to controller
+	cred, err := c.Cookie("creds")
+	if (err != nil) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+	creds := strings.Split(cred, ":")
+	if (len(creds) != 3) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cookie invalid"})
+		return
+	}
+	reqUser := Users{creds[0], creds[1], creds[2]}
+	found := false
+	for _, user := range allUsers {
+		if (user == reqUser) {
+			found = true
+			break
+		}
+	}
+	if (!found) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+	//valid user, forward request
+	log.Println(fmt.Sprintf("%s/%s?%s",server_controller,c.Request.URL.Path,c.Request.URL.RawQuery))
+	resp, err := http.Get(fmt.Sprintf("%s/%s?%s"))
+// 	if err != nil {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": err})
+// 		return
+// 	}
+	var respbody []byte 
+	respbody, err = io.ReadAll(resp.Body)
+	if (err != nil) {
+		c.JSON(http.StatusBadRequest, gin.H{"error":err})
+	}
+	c.Data(resp.StatusCode, "application/json", respbody)
+} 
+
+func requestAppsHandler(c *gin.Context) { //input: teamid, array of apps to request
+	//check creds
+	
+	cred, err := c.Cookie("creds")
+	if (err != nil) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+	creds := strings.Split(cred, ":")
+	if (len(creds) != 3) {
+		c.JSON(http.StatusBadRequest, gin.H{"error": "cookie invalid"})
+		return
+	}
+	reqUser := Users{creds[0], creds[1], creds[2]}
+	found := false
+	for _, user := range allUsers {
+		if (user == reqUser) {
+			found = true
+			break
+		}
+	}
+	if (!found) {
+		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
+		return
+	}
+	//valid creds, validate request body
+	var req AppRequest
+	err = c.ShouldBindJSON(&req)
+	if err != nil {
+		c.JSON(http.StatusBadRequest, gin.H{"error":err})
+		return
+	}
+	if req.Team != reqUser.Team {
+		c.JSON(http.StatusBadRequest, gin.H{"error":"unauthorized"})
+		return
+	}
+	for app := range req.Apps {
+		if app.Approval_Status != "pending" {
+			c.JSON(http.StatusBadRequest, gin.H{"error":"unauthorized"})
+			return
+		}
+	}
+	//valid request, send to server controller
+	jsonbody := json.Marshal(req)
+	resp, resperr := http.Post(fmt.Sprintf("%s/updateProject", server_controller), bytes.NewBuffer(jsonbody))
+	defer resp.Body.Close()
+// 	if (resperr != nil) {
+// 		c.JSON(http.StatusBadRequest, gin.H{"error": resperr})
+// 		return
+// 	}
+	respbody := io.Reader(resp.Body)
+	c.Data(resp.StatusCode,"application/json",respbody)
+}
+
+
 
 func appReverseProxyHandler(c *gin.Context) {
 
@@ -165,7 +309,7 @@ func authHandler(c *gin.Context) {
 		c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
 		return
 	}
-	log.Println("user:",requestUser.Team,requestUser.User,requestUser.Pass)
+	log.Println("user:",requestUser.Team,requestUser.Username,requestUser.Password)
 	var foundUser *Users
 	for _, user := range allUsers {
 		if user == requestUser {
@@ -175,29 +319,35 @@ func authHandler(c *gin.Context) {
 	}
 	// check if the user was found
 	if foundUser == nil {
-		log.Println("user not found:",requestUser.Team,requestUser.User,requestUser.Pass)
+		log.Println("user not found:",requestUser.Team,requestUser.Username,requestUser.Password)
 		c.JSON(http.StatusUnauthorized, gin.H{"error": "Invalid username or password"})
 		return
 	}
 	
 	//user found, so set cookie to their credentials (this is a prototype)
-	c.SetCookie("creds", fmt.Sprintf("%s:%s:%s", foundUser.Team, foundUser.User, foundUser.Pass), 86400, "/", base_url, false, true)
+	c.SetCookie("creds", fmt.Sprintf("%s:%s:%s", foundUser.Team, foundUser.Username, foundUser.Password), 86400, "/", base_url, false, true)
 	c.JSON(http.StatusOK, gin.H{"message": "Login successful"})
 }
 
 func main() {
 
 	teamAddrs = make(map[string]string)
+	getUsersFromController()
+	getAppsFromController()
 	prevReqTime = time.Now()
 	updateAddrs()
 	r := gin.Default()
 	
-	
+	r.Use(cors.Default())
 	r.Use(static.Serve("/", static.LocalFile("./out", true)))
 	//serve static files like /student/login, only check auth when handling apps
 	
 	r.GET("/app/code/*path", appReverseProxyHandler)
+	r.GET("/api/getApps", getAppsHandler)
+	r.GET("/api/getProject", getProjectHandler)
+	r.POST("/api/requestApps", requestAppsHandler)
 	r.POST("/api/auth", authHandler)
+	
 	
 	
 	if err := r.Run(base_url); err != nil {
