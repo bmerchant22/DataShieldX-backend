@@ -16,6 +16,9 @@ func CreateWebServer() *Server {
 	srv.r = gin.Default()
 	srv.r.Use(cors.Default())
 	
+	//set up mongo client
+	ActuallyCreateMongoClient()
+	
 	//static path
 	srv.r.Use(static.Serve("/", static.LocalFile("./out", true)))
 // 	outFolderPath := "out"

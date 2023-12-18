@@ -13,28 +13,44 @@ import(
 )
 
 //* Get ENV variables 
-var mongoURI 				= "mongodb+srv://trumio:trumio-db-pass!@rocket-chat-cluster.wg1zzcc.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
+var mongoURI 				= "mongodb+srv://deven:neved@cluster0.h5zvxkm.mongodb.net/?retryWrites=true&w=majority"			//os.Getenv("MONGO_URI")
 var mongoDBName 			= 	"trumio-backend"		//os.Getenv("MONGO_DB_NAME")
 var projectsCollectionName 	= "projects-collection"			//os.Getenv("PROJECTS_COLLECTION_NAME")
 // var usersCollectionName := 			//os.Getenv("USERS_COLLECTION_NAME")
 var appsCollectionName = "apps-collection" 			//os.Getenv("APPS_COLLECTION_NAME")
 
+var MongoClient *mongo.Client
 
 //* Create MongoDB client and connect to the database
 func CreateMongoClient() (*mongo.Client, error) {
-	
+	// Create a new client
+// 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoURI))
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	// Connect to the database
+// 	err = client.Connect(context.Background())
+// 	if err != nil {
+// 		return nil, err
+// 	}
+// 	return client, nil
+		return MongoClient, nil
+}
+
+func ActuallyCreateMongoClient() (error) {
 	// Create a new client
 	client, err := mongo.NewClient(options.Client().ApplyURI(mongoURI))
 	if err != nil {
-		return nil, err
+		return err
 	}
 	// Connect to the database
 	err = client.Connect(context.Background())
 	if err != nil {
-		return nil, err
+		return err
 	}
-	return client, nil
-	
+	//set mongoClient
+	MongoClient = client
+	return  nil
 }
 
 //* Generic function to check if a document with a key exists in the collection

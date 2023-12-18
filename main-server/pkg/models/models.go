@@ -8,11 +8,11 @@ type User struct {
 
 type Project struct {
     Project_ID    string      `bson:"project_id" json:"project_id" binding:"required"`
-    Name          string      `bson:"name" json:"name"`
-    Project_Desc  string      `bson:"project_desc" json:"project_desc"`
-    Milestones    []Milestone `bson:"milestones" json:"milestones"`
-    Team          []User      `bson:"team" json:"team"`
-    Apps          []App       `bson:"apps" json:"apps"`
+    Name          string      `bson:"name,omitempty" json:"name"`
+    Project_Desc  string      `bson:"project_desc,omitempty" json:"project_desc"`
+    Milestones    []Milestone `bson:"milestones,omitempty" json:"milestones"`
+    Team          []User      `bson:"team,omitempty" json:"team"`
+    Apps          []App       `bson:"apps,omitempty" json:"apps"`
 }
 
 type Milestone struct {
@@ -31,6 +31,7 @@ type Task struct {
     Assignees   []User  `bson:"assignees" json:"assignees"`
 }
 //status should be "completed", "pending" or "late"
+
 type App struct {
     App_Name         string `bson:"app_name" json:"app_name"`
     App_Desc         string `bson:"app_desc" json:"app_desc"`
