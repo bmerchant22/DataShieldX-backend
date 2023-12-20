@@ -1,14 +1,18 @@
 package web
 
 import(
-	"context"
 	"net/http"
 	"github.com/gin-gonic/gin"
 	"fmt"
+	"time"
 	"github.com/bmerchant22/DataShieldX-backend/pkg/models"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	openai "github.com/sashabaranov/go-openai"
+	"context"
+	"strconv"
+	"strings"
 	// "os"
 )
 
@@ -18,6 +22,8 @@ var mongoDBName 			= 	"trumio-backend"		//os.Getenv("MONGO_DB_NAME")
 var projectsCollectionName 	= "projects-collection"			//os.Getenv("PROJECTS_COLLECTION_NAME")
 // var usersCollectionName := 			//os.Getenv("USERS_COLLECTION_NAME")
 var appsCollectionName = "apps-collection" 			//os.Getenv("APPS_COLLECTION_NAME")
+const openaiAPIKey = "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"
+const YYYYMMDD = "2006/01/02"
 
 var MongoClient *mongo.Client
 
@@ -342,30 +348,191 @@ func (srv *Server) GetAppsHandler(c *gin.Context) {
 	c.JSON(http.StatusOK, apps)
 }
 
-//dummy milestone generator handler
 func (srv *Server) GenerateMilestoneHandler (c *gin.Context) {
 	//in request: a json with fields name and project_desc - unmarshal and send to model, receive milestones in json format and return
-	//returning mock data:
-	c.JSON(http.StatusOK, gin.H{
-		"milestones": []interface{}{
-			map[string]interface{}{
-				"milestone_id": "1",
-				"milestone_desc": "Research ways of reducing server latency",
-				"completion_date":"2024/01/05",
-				"tasks": []interface{}{},
+	var request struct {
+		ProjectName string `json:"project_name"`
+		ProjectDesc string `json:"project_desc"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+	}
+
+	gpt := openai.NewClient(openaiAPIKey)
+
+	resp, err := gpt.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+					Model: openai.GPT3Dot5Turbo,
+					Messages: []openai.ChatCompletionMessage{
+							{
+									Role:    "user",
+									Content: fmt.Sprintf(`You are a project milestone generator assistant. And you stick to the point & provide very concise milestone breakdown of an idea overview given to you. You first plan the roadmap based on the idea overview provided and then you always output the milestones in the following format as a list. The best thing about you is that you strictly follow the format given below: 
+
+Milestone 1
+- Description: <fill-here>
+- Number of days required: <fill-here>
+Milestone 2
+- Description: <fill-here>
+- Number of days required: <fill-here>
+.
+.
+.
+Milestone n
+- Description: <fill-here>
+- Number of days required: <fill-here>
+------
+
+Following is the idea overview. Please make sure to stick to the format and provide me with concise milestones that are only one line and one line only.
+Project Name: %s
+Project Description: %s`,request.ProjectName, request.ProjectDesc),
+							},
+					},
 			},
-			map[string]interface{}{
-				"milestone_id": "2",
-				"milestone_desc": "Implement netcode for game server",
-				"completion_date":"2024/02/05",
-				"tasks": []interface{}{},
+	)
+
+	if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error calling OpenAI API"})
+        return
+    }
+
+    // Extract the response from the OpenAI API
+    var response string
+    if len(resp.Choices) > 0 {
+        response = resp.Choices[0].Message.Content
+    } else {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "No choices found in OpenAI response"})
+        return
+    }
+		//split response
+		// c.JSON(http.StatusOK, gin.H{"data": response})
+		dirtyAllItems := strings.Split(response,"\n")
+		var allItems []string //remove empty strings due to \n\n
+		for _,item := range dirtyAllItems {
+			if (item != "") {
+				allItems = append(allItems, item)
+			}
+		}
+// 		c.JSON(http.StatusOK, gin.H{"data": allItems})
+		ret := make([]models.Milestone, 0)
+		currDate := time.Now()
+		var newMilestone *models.Milestone
+		for idx, item := range allItems {
+			fmt.Println(idx)
+			fmt.Println(item)
+			switch (idx%3) {
+				case 0:
+					newMilestone = new(models.Milestone)
+					newMilestone.Tasks = make([]models.Task, 0)
+					newMilestone.Milestone_ID = fmt.Sprintf("%v",idx/3 + 1)
+				case 1:
+					newMilestone.Milestone_Desc = strings.Split(item, ": ")[1]
+				case 2:
+					days,_ := strconv.Atoi(strings.Split(item,": ")[1])
+					currDate = currDate.AddDate(0,0,days)
+					newMilestone.Completion_Date = currDate.Format(YYYYMMDD)
+					ret = append(ret, *newMilestone)
+			}
+		}
+		
+    // Return the response to the frontend
+    c.JSON(http.StatusOK, gin.H{"milestones": ret})
+}
+
+func (srv *Server) GenerateTasksHandler (c *gin.Context) {
+	//in request: a json with fields name and project_desc - unmarshal and send to model, receive milestones in json format and return
+	var request struct {
+		MilestoneDesc string `json:"milestone_desc"`
+	}
+
+	if err := c.ShouldBindJSON(&request); err != nil {
+			c.JSON(http.StatusBadRequest, gin.H{"error": err.Error()})
+			return
+	}
+
+	gpt := openai.NewClient(openaiAPIKey)
+
+	resp, err := gpt.CreateChatCompletion(
+			context.Background(),
+			openai.ChatCompletionRequest{
+					Model: openai.GPT3Dot5Turbo,
+					Messages: []openai.ChatCompletionMessage{
+							{
+									Role:    "user",
+									Content: fmt.Sprintf(`You are a task generator assistant to achieve a particular milestone. And you stick to the point & provide very concise task breakdown of an idea overview given to you. You first plan the roadmap based on the milestone provided and then you always output the tasks in the following format as a list. The best thing about you is that you strictly follow the format given below: 
+
+Task 1
+- Description: <fill-here>
+- Start-date: <fill-here>
+- End-date: <fill-here>
+Task 2
+- Description: <fill-here>
+- Start-date: <fill-here>
+- End-date: <fill-here>
+.
+.
+.
+Task n
+- Description: <fill-here>
+- Start-date: <fill-here>
+- End-date: <fill-here>
+------
+
+Following is the task overview. Please make sure to stick to the format and provide me with concise tasks that are only one line and one line only.
+Milestone Description: %s`,request.MilestoneDesc),
+							},
+					},
 			},
-			map[string]interface{}{
-				"milestone_id": "3",
-				"milestone_desc": "Finish auxilliary features",
-				"completion_date":"2024/02/15",
-				"tasks": []interface{}{},
-			},
-		},
-	})	
+	)
+
+	if err != nil {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "Error calling OpenAI API"})
+        return
+    }
+
+    // Extract the response from the OpenAI API
+    var response string
+    if len(resp.Choices) > 0 {
+        response = resp.Choices[0].Message.Content
+    } else {
+        c.JSON(http.StatusInternalServerError, gin.H{"error": "No choices found in OpenAI response"})
+        return
+    }
+		//split response
+		// c.JSON(http.StatusOK, gin.H{"data": response})
+		dirtyAllItems := strings.Split(response,"\n")
+		var allItems []string //remove empty strings due to \n\n
+		for _,item := range dirtyAllItems {
+			if (item != "") {
+				allItems = append(allItems, item)
+			}
+		}
+// 		c.JSON(http.StatusOK, gin.H{"data": allItems})
+		ret := make([]models.Task, 0)
+		var newTask *models.Task
+		for idx, item := range allItems {
+			fmt.Println(idx)
+			fmt.Println(item)
+			switch (idx%4) {
+				case 0:
+					newTask = new(models.Task)
+					newTask.Status = "pending"
+					newTask.Assignees = make([]models.User, 0)
+					newTask.Task_ID = fmt.Sprintf("%v",idx/4 + 1)
+				case 1:
+					newTask.Task_Desc = strings.Split(item, ": ")[1]
+				case 2:
+					start,_ := strconv.Atoi(strings.Split(item,": ")[1])
+					newTask.Start_Time = time.Now().AddDate(0,0,start).Format(YYYYMMDD)
+				case 3:
+					end,_ := strconv.Atoi(strings.Split(item,": ")[1])
+					newTask.End_Time = time.Now().AddDate(0,0,end).Format(YYYYMMDD)
+					ret = append(ret, *newTask)
+			}
+		}
+		
+    // Return the response to the frontend
+    c.JSON(http.StatusOK, gin.H{"tasks": ret})
 }

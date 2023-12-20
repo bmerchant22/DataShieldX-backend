@@ -51,7 +51,7 @@ func CreateWebServer() *Server {
 
 	// // Generative routes.
 	srv.r.POST(kGenerateMilestone, srv.GenerateMilestoneHandler)
-	// srv.r.POST(kGenerateTasks, srv.GenerateTasksHandler)
+	srv.r.POST(kGenerateTasks, srv.GenerateTasksHandler)
 	
 
 
